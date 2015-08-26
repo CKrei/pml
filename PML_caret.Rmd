@@ -1,0 +1,265 @@
+---
+title: "Practical Machine Learning with caret"
+author: "Christoph Kreibich"
+date: "Monday, August 24, 2015"
+output: html_document
+---
+
+In the following modelling calculations the 'caret'-package has been used to fit and evaluate predictive models for the final assignment in the Coursera course 'Practical Machine Learning'.
+
+The following Models will be used:
+1. Support Vector Machine (Radial Kernel, Polynomial Kernel)
+2. Random Forest
+3. CART
+4. KNN
+5. Naive Bayes
+6. Gradient Boosting Machine
+7. Neural Net
+8. MDA
+
+Model tuning happens - i.e., optmizing hyperparameters - by using iterated F-Racing. Model performance will be evaluated through 5-fold-crossvalidation.
+
+For the selection of the best performing model Accuracy is used.
+
+First clean the workspace and load the data:
+
+```{r}
+rm(list=ls())
+
+set.seed(1901)
+
+require(dplyr)
+require(caret)
+
+train <- read.csv("D:/01_DL/pml-training.csv", row.names="X")
+test <- read.csv("D:/01_DL/pml-testing.csv", row.names="X")
+```
+
+Next we check the structure of our data. I do this for variability in the data with the 'nzv'-function from the 'caret'-package and via a for-loop for manual inspection of the summary for each variable. Variables that are suspicious in terms of variability, missing values or seem to have little predictive power are excluded. Same goes for variables like timestamps or identifiers.
+
+```{r}
+# str(train)
+
+indNV <- nzv(train, saveMetrics=T)
+
+#Check Variables
+for(i in 1:ncol(train)){
+  ind <- summary(train[,i])
+  print(names(train)[i])
+  print(ind)
+}
+for(i in 1:ncol(test)){
+  ind <- summary(test[,i])
+  print(names(test)[i])
+  print(ind)
+}
+
+#Select Variables
+train <- train %>%
+  select(-one_of("raw_timestamp_part_1",
+                 "raw_timestamp_part_2",
+                 "cvtd_timestamp",
+                 "new_window",
+                 "num_window",
+                 "amplitude_yaw_forearm"))
+test <- test %>%
+  select(-one_of("raw_timestamp_part_1",
+                 "raw_timestamp_part_2",
+                 "cvtd_timestamp",
+                 "new_window",
+                 "num_window",
+                 "amplitude_yaw_forearm"))
+```
+
+As all remaining variables - except for the the subject id and the 'classe'-variable - are numeric with some encoding problems, the variables are changed to numeric. This results in some additional missing values which are imputed by the median of the other observations.
+Normally I would prefer multiple imputation (e.g., with the 'BaBoon'-, 'Amelia'- or other packages) but as this is quite time-consuming - and the modelling afterwards even more - I choose not to do so in this case.
+
+```{r}
+#Change everything to numeric
+for(i in 2:(ncol(train)-1)){
+  train[,i] <- as.numeric(train[,i])
+  test[,i] <- as.numeric(test[,i])
+}
+
+# str(train)
+
+#Impute Variables
+#Train
+for(i in 1:ncol(train)){
+  if(any(is.na(train[,i]))){
+   if(is.numeric(train[,i])){
+    ind <- which(is.na(train[,i]))
+    train[ind, i] <- median(train[,i], na.rm=TRUE)
+  }
+  }else{
+    next
+  }
+}
+#Test
+for(i in 1:ncol(test)){
+  if(any(is.na(test[,i]))){
+   if(is.numeric(test[,i])){
+    ind <- which(is.na(test[,i]))
+    test[ind, i] <- median(test[,i], na.rm=TRUE)
+  }
+  }else{
+    next
+  }
+}
+for(i in 1:ncol(test)){
+  if(all(is.na(test[,i]))){
+    test[,i] <- 0
+  }else{
+    next
+  }
+}
+```
+
+The next thing is setting the control parameters for the model fitting. I choose to use 5-fold cross-validation to save some time when fitting the models. With a more powerful machine I would go for repeated cross-validation.
+
+
+```{r}
+ctrl <- trainControl(method="cv",
+                     number=5,
+                     verboseIter=TRUE)
+```
+
+Afterwards we fit the models with a 'tuneLength' of 10.
+
+```{r}
+#SVM Polynomial
+fitSVMPoly <- train(classe~.,
+                    data=train,
+                    method="svmPoly",
+                    tuneLength=10,
+                    trControl=ctrl)
+
+#SVM Radial
+fitSVMRadial <- train(classe~.,
+                      data=train,
+                      method="svmRadial",
+                      tuneLength=10,
+                      trControl=ctrl)
+
+#######################################
+
+#Random Forest
+fitRF <- train(classe~.,
+               data=train,
+               method="rf",
+               tuneLength=10,
+               trControl=ctrl)
+
+#######################################
+
+#CART
+fitRpart <- train(classe~.,
+                  data=train,
+                  method="rpart",
+                  tuneLength=10,
+                  trControl=ctrl)
+
+#######################################
+
+#KNN
+fitKNNl <- train(classe~.,
+                 data=train,
+                 method="knn",
+                 tuneLength=10,
+                 trControl=ctrl)
+
+#######################################
+
+#Naive Bayes
+fitNB <- train(classe~.,
+               data=train,
+               method="nb",
+               tuneLength=10,
+               trControl=ctrl)
+
+#######################################
+
+#GBM
+fitGBM <- train(classe~.,
+                data=train,
+                method="gbm",
+                tuneLength=10,
+                trControl=ctrl)
+
+#######################################
+
+#Neural Net
+fitNnet <- train(classe~.,
+                 data=train,
+                 method="nnet",
+                 tuneLength=10,
+                 trControl=ctrl)
+
+#######################################
+
+#MDA
+fitMDA <- train(classe~.,
+                data=train,
+                method="mda",
+                tuneLength=10,
+                trControl=ctrl)
+
+#######################################
+
+```
+
+After the model fitting is done we inspect the performance of our models graphically. The two Support Vector Machines and the MDA failed while tuning so they are excluded from further analysis.
+
+```{r, echo=FALSE}
+plot(fitRF)
+plot(fitRpart)
+plot(fitKNNl)
+plot(fitNB)
+plot(fitGBM)
+plot(fitNnet)
+```
+
+We already see major differences in the performance between the models in the different plots but we don't have a complete picture of the models really differ.
+
+```{r}
+mods <- list("Random Forest" = fitRF,
+             "CART" = fitRpart,
+             "KNN" = fitKNNl,
+             "Naive Bayes" = fitNB,
+             "Gradient Boosting Machine" = fitGBM,
+             "Neural Network" = fitNnet
+             )
+res <- resamples(mods)
+summary(res)
+```
+
+Numerically we see that Random Forests and GBMs clearly outperform the other models.
+Below we see the same picture graphically as boxplots - note the small variability for those two models - and pairwise compared. In all those graphs we can't see a real difference between Random Forests and GBMs.
+
+
+```{r}
+bwplot(res)
+splom(res)
+```
+
+The same story is true for the differences in Accuracy between those two models.
+
+```{r}
+modDiffs <- diff(res)
+summary(modDiffs)
+bwplot(modDiffs)
+```
+
+As we don't see a clear advantage I go for the minimal additional accuracy of the GBM and use the Random Forest to check wether the results are consistent.
+
+```{r}
+predRF <- stats::predict(fitRF, newdata = test)
+predGBM <- stats::predict(fitGBM, newdata = test)
+
+predRF
+predGBM
+
+setdiff(predRF, predGBM)
+```
+
+We see a 100% consistency between the predictions which makes me quite confident that I can trust my predictions.
