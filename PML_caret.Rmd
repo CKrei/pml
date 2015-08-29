@@ -26,6 +26,8 @@ First clean the workspace and load the data:
 ```{r}
 rm(list=ls())
 
+load("D:/01_DL/pml/PML_caret.RData")
+
 set.seed(1901)
 
 require(dplyr)
@@ -35,7 +37,7 @@ train <- read.csv("D:/01_DL/pml-training.csv", row.names="X")
 test <- read.csv("D:/01_DL/pml-testing.csv", row.names="X")
 ```
 
-Next we check the structure of our data. I do this for variability in the data with the 'nzv'-function from the 'caret'-package and via a for-loop for manual inspection of the summary for each variable. Variables that are suspicious in terms of variability, missing values or seem to have little predictive power are excluded. Same goes for variables like timestamps or identifiers.
+Next we check the structure of our data. I do this for variability in the data with the 'nzv'-function from the 'caret'-package and via a for-loop for manual inspection of the summary for each variable. Variables that are suspicious in terms of variability, missing values or seem to have little predictive power are excluded. Same goes for variables like timestamps or identifiers. You have to uncomment the 'print'-statements in order to see the summaries. This was done because the output is quite long.
 
 ```{r}
 # str(train)
@@ -45,13 +47,13 @@ indNV <- nzv(train, saveMetrics=T)
 #Check Variables
 for(i in 1:ncol(train)){
   ind <- summary(train[,i])
-  print(names(train)[i])
-  print(ind)
+#   print(names(train)[i])
+#   print(ind)
 }
 for(i in 1:ncol(test)){
   ind <- summary(test[,i])
-  print(names(test)[i])
-  print(ind)
+#   print(names(test)[i])
+#   print(ind)
 }
 
 #Select Variables
@@ -124,85 +126,85 @@ ctrl <- trainControl(method="cv",
                      verboseIter=TRUE)
 ```
 
-Afterwards we fit the models with a 'tuneLength' of 10.
+Afterwards we fit the models with a 'tuneLength' of 10. The model tuning is commented out in the HTML-file as I initally loaded the corresponding workspace I used for the analysis.
 
 ```{r}
 #SVM Polynomial
-fitSVMPoly <- train(classe~.,
-                    data=train,
-                    method="svmPoly",
-                    tuneLength=10,
-                    trControl=ctrl)
+# fitSVMPoly <- train(classe~.,
+#                     data=train,
+#                     method="svmPoly",
+#                     tuneLength=10,
+#                     trControl=ctrl)
 
-#SVM Radial
-fitSVMRadial <- train(classe~.,
-                      data=train,
-                      method="svmRadial",
-                      tuneLength=10,
-                      trControl=ctrl)
-
-#######################################
-
-#Random Forest
-fitRF <- train(classe~.,
-               data=train,
-               method="rf",
-               tuneLength=10,
-               trControl=ctrl)
+# #SVM Radial
+# fitSVMRadial <- train(classe~.,
+#                       data=train,
+#                       method="svmRadial",
+#                       tuneLength=10,
+#                       trControl=ctrl)
 
 #######################################
 
-#CART
-fitRpart <- train(classe~.,
-                  data=train,
-                  method="rpart",
-                  tuneLength=10,
-                  trControl=ctrl)
+# #Random Forest
+# fitRF <- train(classe~.,
+#                data=train,
+#                method="rf",
+#                tuneLength=10,
+#                trControl=ctrl)
 
 #######################################
 
-#KNN
-fitKNNl <- train(classe~.,
-                 data=train,
-                 method="knn",
-                 tuneLength=10,
-                 trControl=ctrl)
+# #CART
+# fitRpart <- train(classe~.,
+#                   data=train,
+#                   method="rpart",
+#                   tuneLength=10,
+#                   trControl=ctrl)
 
 #######################################
 
-#Naive Bayes
-fitNB <- train(classe~.,
-               data=train,
-               method="nb",
-               tuneLength=10,
-               trControl=ctrl)
+# #KNN
+# fitKNNl <- train(classe~.,
+#                  data=train,
+#                  method="knn",
+#                  tuneLength=10,
+#                  trControl=ctrl)
 
 #######################################
 
-#GBM
-fitGBM <- train(classe~.,
-                data=train,
-                method="gbm",
-                tuneLength=10,
-                trControl=ctrl)
+# #Naive Bayes
+# fitNB <- train(classe~.,
+#                data=train,
+#                method="nb",
+#                tuneLength=10,
+#                trControl=ctrl)
 
 #######################################
 
-#Neural Net
-fitNnet <- train(classe~.,
-                 data=train,
-                 method="nnet",
-                 tuneLength=10,
-                 trControl=ctrl)
+# #GBM
+# fitGBM <- train(classe~.,
+#                 data=train,
+#                 method="gbm",
+#                 tuneLength=10,
+#                 trControl=ctrl)
 
 #######################################
 
-#MDA
-fitMDA <- train(classe~.,
-                data=train,
-                method="mda",
-                tuneLength=10,
-                trControl=ctrl)
+# #Neural Net
+# fitNnet <- train(classe~.,
+#                  data=train,
+#                  method="nnet",
+#                  tuneLength=10,
+#                  trControl=ctrl)
+
+#######################################
+
+# #MDA
+# fitMDA <- train(classe~.,
+#                 data=train,
+#                 method="mda",
+#                 tuneLength=10,
+#                 trControl=ctrl)
 
 #######################################
 
